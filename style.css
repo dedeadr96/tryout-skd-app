@@ -1,0 +1,57 @@
+/* style.css */
+
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+.question-nav-grid {
+    grid-template-columns: repeat(auto-fill, minmax(2.5rem, 1fr));
+}
+
+/* Custom scrollbar for better UX on question navigation */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Style for generated analysis content */
+#analysis-container h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+#analysis-container h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+#analysis-container strong {
+    font-weight: 600;
+}
+
+#analysis-container ul {
+    list-style-type: disc;
+    list-style-position: inside;
+    margin-top: 0.5rem;
+    margin-left: 1rem;
+    margin-bottom: 1rem;
+}

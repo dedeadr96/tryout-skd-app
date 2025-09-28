@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulasi Tryout SKD CPNS Interaktif</title>
+    
+    <!-- Link ke CDN TailwindCSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Link ke Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Link ke file CSS eksternal Anda -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="bg-gray-100 text-gray-800 flex items-center justify-center min-h-screen p-4">
+    <div id="app-container" class="w-full max-w-6xl mx-auto">
+
+        <!-- Halaman Welcome -->
+        <div id="welcome-screen" class="bg-white p-8 rounded-2xl shadow-lg text-center transition-opacity duration-500">
+            <h1 class="text-4xl font-bold text-indigo-600 mb-4">Latihan Tryout SKD v.1</h1>
+            <p class="text-gray-600 mb-2 max-w-2xl mx-auto">Uji kesiapan Anda dalam menghadapi Seleksi Kompetensi Dasar (SKD) CPNS dengan simulasi interaktif Teknologi AI.</p>
+            <p class="text-gray-600 mb-2 max-w-2xl mx-auto">Made with ❤️ by. hebatcpns.id</p>
+            <div class="my-6 p-6 border rounded-lg bg-gray-50 text-left max-w-md mx-auto">
+                <h3 class="font-semibold text-lg mb-3 text-center">Detail Ujian</h3>
+                <ul class="space-y-2 text-gray-700">
+                    <li class="flex justify-between"><span>📚 Total Soal</span> <span class="font-medium">110 Soal</span></li>
+                    <li class="flex justify-between"><span>⏱️ Waktu</span> <span class="font-medium">100 Menit</span></li>
+                    <li class="flex justify-between"><span>- TWK (Wawasan Kebangsaan)</span> <span class="font-medium">30 Soal</span></li>
+                    <li class="flex justify-between"><span>- TIU (Intelegensia Umum)</span> <span class="font-medium">35 Soal</span></li>
+                    <li class="flex justify-between"><span>- TKP (Karakteristik Pribadi)</span> <span class="font-medium">45 Soal</span></li>
+                </ul>
+            </div>
+            <button id="start-btn" class="bg-indigo-600 text-white font-bold py-3 px-10 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition-all duration-300 transform hover:scale-105">
+                Mulai Tryout
+            </button>
+            <p id="ai-status" class="text-sm text-gray-500 mt-4 h-5"></p>
+        </div>
+
+        <!-- Halaman Tryout -->
+        <div id="tryout-screen" class="hidden transition-opacity duration-500">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Kolom Soal (Kiri) -->
+                <div class="lg:col-span-2 bg-white p-6 sm:p-8 rounded-2xl shadow-lg">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-4">
+                        <div>
+                            <span id="question-category" class="bg-indigo-100 text-indigo-800 text-sm font-bold px-3 py-1 rounded-full">Kategori</span>
+                            <h2 class="text-xl font-bold mt-2">Soal #<span id="question-number">1</span></h2>
+                        </div>
+                        <div class="bg-red-100 text-red-800 text-2xl font-bold px-4 py-2 rounded-lg mt-4 sm:mt-0">
+                            ⏳ <span id="timer">100:00</span>
+                        </div>
+                    </div>
+                    
+                    <div id="question-container" class="mb-6">
+                        <p id="question-text" class="text-lg leading-relaxed mb-6">Teks pertanyaan akan muncul di sini.</p>
+                        <div id="options-container" class="space-y-4">
+                            <!-- Opsi Jawaban akan dimasukkan di sini oleh JavaScript -->
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center mt-8 pt-6 border-t">
+                        <button id="prev-btn" class="bg-gray-200 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-300 transition-colors duration-300">
+                            Sebelumnya
+                        </button>
+                        <button id="next-btn" class="bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 transition-colors duration-300">
+                            Berikutnya
+                        </button>
+                        <button id="finish-btn" class="hidden bg-green-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 transition-colors duration-300">
+                            Selesaikan
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Navigasi Soal (Kanan) -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg">
+                    <h3 class="text-lg font-bold mb-4 border-b pb-2">Navigasi Soal</h3>
+                    <div id="question-nav-container" class="max-h-96 lg:max-h-full overflow-y-auto custom-scrollbar pr-2">
+                        <div id="question-nav-grid" class="grid gap-2 question-nav-grid">
+                            <!-- Tombol Navigasi Soal akan dimasukkan di sini -->
+                        </div>
+                    </div>
+                    <button id="finish-tryout-nav-btn" class="w-full mt-6 bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors duration-300">
+                        Selesaikan Ujian
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Halaman Hasil -->
+        <div id="result-screen" class="hidden bg-white p-8 rounded-2xl shadow-lg text-center transition-opacity duration-500">
+            <h1 id="result-title" class="text-4xl font-bold mb-2">Hasil Tryout Anda</h1>
+            <p id="result-status" class="text-2xl font-semibold mb-6"></p>
+
+            <div class="max-w-2xl mx-auto my-8">
+                <div class="grid grid-cols-1 md:grid-cols-4 font-semibold text-gray-600 bg-gray-100 p-4 rounded-t-lg">
+                    <div>Kategori</div>
+                    <div>Skor Anda</div>
+                    <div>Passing Grade</div>
+                    <div>Status</div>
+                </div>
+                <div id="score-details" class="divide-y">
+                    <!-- Detail skor per kategori akan dimasukkan di sini -->
+                </div>
+                 <div class="grid grid-cols-1 md:grid-cols-4 font-bold text-gray-800 bg-gray-200 p-4 rounded-b-lg">
+                    <div>TOTAL SKOR</div>
+                    <div id="total-score" class="md:col-span-3 text-2xl">0</div>
+                </div>
+            </div>
+            
+            <p class="text-sm text-gray-500 mb-6">Passing grade (ambang batas) bersifat simulasi dan dapat berbeda pada seleksi CPNS yang sesungguhnya.</p>
+
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <button id="restart-btn" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition-all duration-300 transform hover:scale-105">
+                    Ulangi Tryout
+                </button>
+                 <button id="get-analysis-btn" class="bg-purple-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-4 focus:ring-purple-300 transition-all duration-300 transform hover:scale-105">
+                    ✨ Dapatkan Analisis & Pembahasan
+                </button>
+            </div>
+
+            <div id="gemini-analysis-section" class="max-w-4xl mx-auto mt-8 text-left">
+                <div id="analysis-container" class="hidden mt-6 bg-gray-50 p-6 rounded-lg border leading-relaxed">
+                    <!-- Gemini analysis will be displayed here -->
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Link ke file JavaScript eksternal Anda -->
+    <script src="script.js"></script>
+</body>
+</html>
