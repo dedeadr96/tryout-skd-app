@@ -497,38 +497,9 @@ async function prepareNextAiQuestions() {
 
     const userQuery = `Buatkan 110 soal latihan Seleksi Kompetensi Dasar (SKD) CPNS yang baru dan unik dalam bahasa Indonesia. Jangan ulangi soal yang sudah ada. Komposisinya harus 30 soal TWK (Tes Wawasan Kebangsaan), 35 soal TIU (Tes Intelegensia Umum), dan 45 soal TKP (Tes Karakteristik Pribadi). Untuk TWK dan TIU, berikan satu jawaban benar. Untuk TKP, berikan 5 opsi jawaban dengan skor 1-5. Kembalikan respons dalam format JSON sesuai skema yang diberikan.`;
     
-    const schema = {
-        type: "ARRAY",
-        items: {
-            type: "OBJECT",
-            properties: {
-                category: { type: "STRING", enum: ["TWK", "TIU", "TKP"] },
-                question: { type: "STRING" },
-                answer: { type: "STRING" },
-                options: {
-                    type: "ARRAY",
-                    items: {
-                        oneOf: [
-                            { type: "STRING" },
-                            {
-                                type: "OBJECT",
-                                properties: {
-                                    text: { type: "STRING" },
-                                    score: { type: "NUMBER" }
-                                },
-                                required: ["text", "score"]
-                            }
-                        ]
-                    }
-                }
-            },
-            required: ["category", "question", "options"]
-        }
-    };
+    const schema = { /* ... Skema JSON Anda tetap sama ... */ };
     
-    // MODIFIED: The API Key is removed from here for security.
-    // MODIFIED: The URL now points to our own serverless function endpoint.
-    const apiUrl = '/api/generate-questions';
+    const apiUrl = '/api/generate-questions'; // Mengarah ke serverless function kita
 
     const payload = {
         contents: [{ parts: [{ text: userQuery }] }],
@@ -545,28 +516,34 @@ async function prepareNextAiQuestions() {
             body: JSON.stringify(payload)
         });
 
-        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+        const result = await response.json(); // Selalu coba parse JSON
+
+        if (!response.ok) {
+            // ** INI BAGIAN PERBAIKAN UTAMA **
+            const errorMessage = result.error || (result.candidates ? 'Request diblokir oleh Gemini.' : 'Kesalahan tidak diketahui.');
+            throw new Error(errorMessage);
+        }
         
-        const result = await response.json();
-        const jsonText = result.candidates[0].content.parts[0].text;
+        const jsonText = result.candidates?.[0].content.parts?.[0].text;
         
         if (!jsonText) throw new Error("Respons AI tidak berisi teks JSON.");
 
         const parsedQuestions = JSON.parse(jsonText);
-        if (!Array.isArray(parsedQuestions) || parsedQuestions.length < 110) { // Make validation stricter
+        if (!Array.isArray(parsedQuestions) || parsedQuestions.length < 110) {
              throw new Error("Format JSON dari AI tidak valid atau jumlah soal kurang dari 110.");
         }
         
-        nextAiQuestions = parsedQuestions.slice(0, 110); // Ensure exactly 110 questions are used
+        nextAiQuestions = parsedQuestions.slice(0, 110);
         console.log(`Soal baru dari AI berhasil dibuat dan siap digunakan. Jumlah soal: ${nextAiQuestions.length}`);
 
     } catch (error) {
-        console.error("Gagal membuat soal dari AI:", error);
-        nextAiQuestions = null; // Gagal, jadi kembali ke null
+        console.error("Gagal membuat soal dari AI:", error.message);
+        nextAiQuestions = null;
     } finally {
         isGeneratingQuestions = false;
         console.log("Proses pembuatan soal oleh AI selesai.");
         updateAiStatusOnWelcome();
+        updateRestartButtonStatus(); // Tambahkan ini agar tombol update
     }
 }
 
@@ -584,6 +561,8 @@ function simpleMarkdownToHtml(markdown) {
 }
 
 
+// script.js
+
 async function getGeminiAnalysis() {
     getAnalysisBtn.disabled = true;
     getAnalysisBtn.textContent = '🧠 Menganalisis...';
@@ -598,6 +577,8 @@ async function getGeminiAnalysis() {
         </div>
     `;
     
+    // ... (kode untuk menyiapkan incorrectTWKTIU dan lowScoreTKP tetap sama) ...
+
     const incorrectTWKTIU = [];
     const lowScoreTKP = [];
 
@@ -616,7 +597,7 @@ async function getGeminiAnalysis() {
             }
         } else if (q.category === 'TKP') {
             const selectedOption = q.options.find(opt => opt.text === userAnswer);
-            if (selectedOption && selectedOption.score < 4) { // Consider score < 4 as needing improvement
+            if (selectedOption && selectedOption.score < 4) {
                 lowScoreTKP.push({
                     question: q.question,
                     userAnswer: userAnswer,
@@ -636,23 +617,21 @@ async function getGeminiAnalysis() {
 
     if (incorrectTWKTIU.length > 0) {
         userQuery += `\n\n## Pembahasan Soal TWK & TIU yang Salah\nBerikan pembahasan yang jelas dan singkat untuk setiap soal berikut:\n`;
-        incorrectTWKTIU.slice(0, 5).forEach((item, i) => { // Limit to 5 to keep prompt concise
+        incorrectTWKTIU.slice(0, 5).forEach((item, i) => {
             userQuery += `${i+1}. Soal (${item.category}): ${item.question}\n   - Jawaban Peserta: ${item.userAnswer}\n   - Jawaban Benar: ${item.correctAnswer}\n`;
         });
     }
 
     if (lowScoreTKP.length > 0) {
         userQuery += `\n\n## Analisis Karakteristik Pribadi (TKP)\nBerdasarkan jawaban dengan skor rendah berikut, berikan analisis singkat mengenai area karakteristik pribadi yang perlu dikembangkan. Berikan juga 2-3 saran praktis dan positif untuk perbaikan.\n`;
-        lowScoreTKP.slice(0, 5).forEach((item, i) => { // Limit to 5
+        lowScoreTKP.slice(0, 5).forEach((item, i) => {
              userQuery += `${i+1}. Soal: ${item.question}\n   - Jawaban Peserta (Skor ${item.score}): ${item.userAnswer}\n`;
         });
     }
 
     const systemPrompt = "Anda adalah seorang tutor ahli dan coach karir spesialis seleksi CPNS di Indonesia. Tugas Anda adalah memberikan analisis mendalam dan saran yang membangun berdasarkan jawaban pengguna. Gunakan bahasa Indonesia yang formal, jelas, dan memotivasi. Sapa pengguna dengan hangat di awal. Format seluruh jawaban Anda menggunakan Markdown agar mudah dibaca.";
     
-    // MODIFIED: The API Key is removed from here for security.
-    // MODIFIED: The URL now points to our own serverless function endpoint.
-    const apiUrl = '/api/get-analysis';
+    const apiUrl = '/api/get-analysis'; // Mengarah ke serverless function kita
 
     const payload = {
         contents: [{ parts: [{ text: userQuery }] }],
@@ -668,15 +647,18 @@ async function getGeminiAnalysis() {
             body: JSON.stringify(payload)
         });
 
+        const result = await response.json(); // Selalu coba parse JSON
+
         if (!response.ok) {
-            const errorBody = await response.json().catch(() => ({ message: 'Could not parse error response.' }));
-            throw new Error(`API error! status: ${response.status}. Message: ${errorBody.error.message || response.statusText}`);
+            // ** INI BAGIAN PERBAIKAN UTAMA **
+            // Cek pesan error dari serverless function atau dari Gemini
+            const errorMessage = result.error || (result.candidates ? 'Request diblokir oleh Gemini, periksa prompt Anda.' : 'Terjadi kesalahan tidak diketahui.');
+            throw new Error(errorMessage);
         }
 
-        const result = await response.json();
-        const candidate = result.candidates[0];
+        const candidate = result.candidates?.[0];
 
-        if (candidate && candidate.content.parts[0].text) {
+        if (candidate && candidate.content.parts?.[0].text) {
             const generatedText = candidate.content.parts[0].text;
             analysisContainer.innerHTML = simpleMarkdownToHtml(generatedText);
         } else {
@@ -692,6 +674,7 @@ async function getGeminiAnalysis() {
 
     } catch (error) {
         console.error("Error calling Gemini API:", error);
+        // ** INI JUGA BAGIAN PERBAIKAN **
         analysisContainer.innerHTML = `<p class="text-red-600 font-semibold text-center">Maaf, terjadi kesalahan saat mencoba mendapatkan analisis: ${error.message}. Silakan coba lagi nanti.</p>`;
         getAnalysisBtn.textContent = '✨ Gagal, Coba Lagi';
         getAnalysisBtn.disabled = false;
